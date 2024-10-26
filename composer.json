@@ -1,6 +1,6 @@
 {
     "name": "digitalcorehub/laravel-model-view-counter",
-    "description": "//",
+    "description": "A Laravel package to count model views with caching support.",
     "type": "library",
     "license": "MIT",
     "autoload": {
