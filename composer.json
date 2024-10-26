@@ -1,0 +1,30 @@
+{
+    "name": "digitalcorehub/laravel-model-view-counter",
+    "description": "//",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "DigitalCoreHub\\LaravelModelViewCounter\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "DigitalCoreHub\\LaravelModelViewCounter\\LaravelModelViewCounterServiceProvider"
+            ]
+        }
+    },
+    "authors": [
+        {
+            "name": "1batu",
+            "email": "32592602+1batu@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "spatie/laravel-package-tools": "^1.16",
+        "php": "^8.0",
+        "laravel/framework": "^9.2|^10.0|^11.0",
+        "illuminate/support": "^9.0|^10.0|^11.0"
+    }
+}
