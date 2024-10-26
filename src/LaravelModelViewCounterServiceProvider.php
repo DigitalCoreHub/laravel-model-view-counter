@@ -1,6 +1,6 @@
 <?php
 
-namespace DigitalCoreHub\LaravelModelViewCounterServiceProvider;
+namespace DigitalCoreHub\LaravelModelViewCounter;
 
 use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
