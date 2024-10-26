@@ -3,6 +3,7 @@
 namespace DigitalCoreHub\LaravelModelViewCounter\Traits;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use DigitalCoreHub\LaravelModelViewCounter\Models\ModelView;
 
 trait CountableView
