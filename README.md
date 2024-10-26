@@ -84,5 +84,6 @@ Route::get('users/{user:id}', function (User $user) {
 ### Görüntülenme Sayısını Arttırın
 
 ```php
+// Görüntülenme sayısını gerekirse manuel olarak arttırın.
 $user->incrementViewCount();
 ```
