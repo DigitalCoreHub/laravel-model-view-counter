@@ -1,6 +1,6 @@
 <?php
 
-namespace DigitalCoreHub\LaravelModelViewCounter;
+namespace DigitalCoreHub\LaravelModelViewCounterServiceProvider;
 
 use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
@@ -9,7 +9,7 @@ use DigitalCoreHub\LaravelModelViewCounter\Events\ModelViewed;
 use DigitalCoreHub\LaravelModelViewCounter\Listeners\IncrementModelViewCount;
 use DigitalCoreHub\LaravelModelViewCounter\Console\Commands\FlushModelViewCounts;
 
-class LaravelModelViewCounter extends PackageServiceProvider
+class LaravelModelViewCounterServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
