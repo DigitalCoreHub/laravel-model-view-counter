@@ -108,3 +108,7 @@ php artisan model-view-counter:flush
 ```
 
 > Komut, cache kilidini güvenli biçimde alıp bırakır; kilit alınamazsa yine de kalan değerleri kaybetmeden aktarır.
+
+## Gelecek Geliştirmeler
+
+- **Zaman Serili Analitik**: Her model için saatlik/günlük/haftalık görüntülenme özetleri üretip kampanya performansını ve trafik trendlerini takip etmeyi kolaylaştıracak bir raporlama katmanı eklenebilir. Paket şu an toplam görüntülenmeleri sunuyor; bu tarz özet tablolara geçiş, trend bazlı görselleştirmeler ve anomalileri algılama gibi ileri kullanım senaryolarını destekler.
