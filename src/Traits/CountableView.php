@@ -4,8 +4,9 @@ namespace DigitalCoreHub\LaravelModelViewCounter\Traits;
 
 use DigitalCoreHub\LaravelModelViewCounter\Models\ModelView;
 use DigitalCoreHub\LaravelModelViewCounter\Support\ModelViewPersistor;
+use DigitalCoreHub\LaravelModelViewCounter\Support\PendingViewCache;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Support\Facades\Cache;
 
 trait CountableView
 {
@@ -32,19 +33,30 @@ trait CountableView
      */
     protected function incrementViewCountWithCache(int $amount): void
     {
-        $cacheKey = $this->cacheStorageKey();
-        $threshold = (int) config('model-view-counter.cache_threshold', 0);
+        try {
+            PendingViewCache::withLock(function () use ($amount): void {
+                $counts = PendingViewCache::getCounts();
+                $modelKey = $this->getCacheModelKey();
+                $threshold = (int) config('model-view-counter.cache_threshold', 0);
+                $current = ($counts[$modelKey] ?? 0) + $amount;
 
-        $counts = Cache::get($cacheKey, []);
-        $modelKey = $this->getCacheModelKey();
-        $counts[$modelKey] = ($counts[$modelKey] ?? 0) + $amount;
+                if ($threshold > 0 && $current >= $threshold) {
+                    $this->persistCountsToDatabase($current);
+                    $current = 0;
+                }
 
-        if ($threshold > 0 && $counts[$modelKey] >= $threshold) {
-            $this->persistCountsToDatabase($counts[$modelKey]);
-            $counts[$modelKey] = 0;
+                if ($current > 0) {
+                    $counts[$modelKey] = $current;
+                } else {
+                    unset($counts[$modelKey]);
+                }
+
+                PendingViewCache::putCounts($counts);
+            });
+        } catch (LockTimeoutException $exception) {
+            // Fall back to direct persistence when the cache lock cannot be acquired.
+            $this->incrementViewCountDirectly($amount);
         }
-
-        Cache::put($cacheKey, $counts, $this->cacheTtlSeconds());
     }
 
     /**
@@ -77,10 +89,10 @@ trait CountableView
             return $count;
         }
 
-        $cachedCounts = Cache::get($this->cacheStorageKey(), []);
         $modelKey = $this->getCacheModelKey();
+        $cachedCount = PendingViewCache::getCounts();
 
-        return $count + (int) ($cachedCounts[$modelKey] ?? 0);
+        return $count + (int) ($cachedCount[$modelKey] ?? 0);
     }
 
     /**
@@ -112,20 +124,6 @@ trait CountableView
      */
     protected function cacheStorageKey(): string
     {
-        return (string) config('model-view-counter.cache_key', 'model_view_counts');
-    }
-
-    /**
-     * Determine the TTL for cached counters.
-     */
-    protected function cacheTtlSeconds(): ?int
-    {
-        $ttl = config('model-view-counter.cache_ttl');
-
-        if ($ttl === null) {
-            return null;
-        }
-
-        return (int) $ttl;
+        return PendingViewCache::cacheKey();
     }
 }

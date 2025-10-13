@@ -7,6 +7,7 @@ Model View Counter, Laravel modellerinizin görüntülenme sayılarını takip e
 - **Model Bazlı Görüntülenme Sayacı**: Herhangi bir Laravel modelinin görüntülenme sayısını takip edin.
 - **Cache Desteği**: Görüntülenme sayıları cache’de tutularak performans artırılır.
 - **Doğruluk Garantisi**: Eşik değer aşıldığında cache’de biriken değerler güvenli bir şekilde veritabanına aktarılır.
+- **Dağıtık Kilitleme**: Birden fazla worker aynı modeli artırırken veri kaybını engellemek için cache işlemleri kilitlenir.
 - **Kolay Entegrasyon**: Modellerinize basit bir trait ekleyerek hızlıca kullanmaya başlayın.
 - **Event ve Listener**: Laravel’in event sistemi kullanılarak esnek bir yapı sunulur.
 - **Cache Temizleme Komutu**: Cache’i temizlemek için Artisan komutu içerir.
@@ -45,6 +46,7 @@ return [
     'cache_threshold' => 10,        // Cache'de birikmesi gereken minimum sayı
     'cache_key' => 'model_view_counts',
     'cache_ttl' => 86_400,          // Cache verilerinin saniye cinsinden yaşam süresi (opsiyonel)
+    'cache_lock_seconds' => 5,      // Cache mutasyonları sırasında dağıtık kilidi ne kadar tutalım
 ];
 ```
 
@@ -104,3 +106,5 @@ Bir maintenance senaryosunda cache’de bekleyen tüm değerleri veritabanına g
 ```bash
 php artisan model-view-counter:flush
 ```
+
+> Komut, cache kilidini güvenli biçimde alıp bırakır; kilit alınamazsa yine de kalan değerleri kaybetmeden aktarır.

@@ -34,4 +34,11 @@ return [
      * Set to null to store indefinitely.
      */
     'cache_ttl' => 86400,
+
+    /*
+     * Number of seconds that cache operations should hold a distributed lock
+     * while mutating cached counters. This prevents race conditions when
+     * multiple workers increment the same model concurrently.
+     */
+    'cache_lock_seconds' => 5,
 ];
