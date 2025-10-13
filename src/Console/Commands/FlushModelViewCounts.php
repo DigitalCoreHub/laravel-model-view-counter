@@ -2,10 +2,9 @@
 
 namespace DigitalCoreHub\LaravelModelViewCounter\Console\Commands;
 
+use DigitalCoreHub\LaravelModelViewCounter\Support\ModelViewPersistor;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use DigitalCoreHub\LaravelModelViewCounter\Models\ModelView;
 
 class FlushModelViewCounts extends Command
 {
@@ -13,27 +12,23 @@ class FlushModelViewCounts extends Command
 
     protected $description = 'Flush cached model view counts to the database';
 
-    public function handle()
+    public function handle(): int
     {
-        $cacheKey = config('model-view-counter.cache_key');
+        $cacheKey = (string) config('model-view-counter.cache_key', 'model_view_counts');
         $counts = Cache::pull($cacheKey, []);
 
         foreach ($counts as $modelKey => $count) {
-            if ($count > 0) {
-                [$modelType, $modelId] = explode(':', $modelKey);
-
-                ModelView::updateOrCreate(
-                    [
-                        'model_type' => $modelType,
-                        'model_id' => $modelId,
-                    ],
-                    [
-                        'count' => DB::raw('count + ' . $count),
-                    ]
-                );
+            if ($count <= 0) {
+                continue;
             }
+
+            [$modelType, $modelId] = explode(':', $modelKey, 2);
+
+            ModelViewPersistor::increment($modelType, $modelId, (int) $count);
         }
 
         $this->info('Model view counts have been flushed to the database.');
+
+        return self::SUCCESS;
     }
 }

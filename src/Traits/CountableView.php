@@ -2,98 +2,130 @@
 
 namespace DigitalCoreHub\LaravelModelViewCounter\Traits;
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use DigitalCoreHub\LaravelModelViewCounter\Models\ModelView;
+use DigitalCoreHub\LaravelModelViewCounter\Support\ModelViewPersistor;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Cache;
 
 trait CountableView
 {
-    public function incrementViewCount()
+    /**
+     * Increment the view counter for the model.
+     */
+    public function incrementViewCount(int $amount = 1): void
     {
-        if (config('model-view-counter.cache_enabled')) {
-            $this->incrementViewCountWithCache();
-        } else {
-            $this->incrementViewCountDirectly();
+        if ($amount <= 0 || $this->getKey() === null) {
+            return;
         }
+
+        if ($this->isCacheEnabled()) {
+            $this->incrementViewCountWithCache($amount);
+
+            return;
+        }
+
+        $this->incrementViewCountDirectly($amount);
     }
 
-    protected function incrementViewCountWithCache()
+    /**
+     * Increment the view counter using the configured cache backend.
+     */
+    protected function incrementViewCountWithCache(int $amount): void
     {
-        $cacheKey = config('model-view-counter.cache_key');
-        $threshold = config('model-view-counter.cache_threshold');
+        $cacheKey = $this->cacheStorageKey();
+        $threshold = (int) config('model-view-counter.cache_threshold', 0);
 
+        $counts = Cache::get($cacheKey, []);
+        $modelKey = $this->getCacheModelKey();
+        $counts[$modelKey] = ($counts[$modelKey] ?? 0) + $amount;
+
+        if ($threshold > 0 && $counts[$modelKey] >= $threshold) {
+            $this->persistCountsToDatabase($counts[$modelKey]);
+            $counts[$modelKey] = 0;
+        }
+
+        Cache::put($cacheKey, $counts, $this->cacheTtlSeconds());
+    }
+
+    /**
+     * Increment the view counter directly in the database.
+     */
+    protected function incrementViewCountDirectly(int $amount): void
+    {
+        $this->persistCountsToDatabase($amount);
+    }
+
+    /**
+     * Persist the cached view counts to the database.
+     */
+    protected function persistCountsToDatabase(int $amount): void
+    {
+        $modelKey = $this->getCacheModelKey();
+        [$modelType, $modelId] = explode(':', $modelKey, 2);
+
+        ModelViewPersistor::increment($modelType, $modelId, $amount);
+    }
+
+    /**
+     * Retrieve the view count for the model including cached values.
+     */
+    public function viewCount(): int
+    {
+        $count = (int) optional($this->modelView)->count;
+
+        if (! $this->isCacheEnabled()) {
+            return $count;
+        }
+
+        $cachedCounts = Cache::get($this->cacheStorageKey(), []);
         $modelKey = $this->getCacheModelKey();
 
-        /*
-        *  Önceki sayımları al
-        *  Get previous counts
-        */
-        $counts = Cache::get($cacheKey, []);
-
-        /*
-        *  Modelin sayımını artır
-        *  Increase the number of models
-        */
-        if (isset($counts[$modelKey])) {
-            $counts[$modelKey]++;
-        } else {
-            $counts[$modelKey] = 1;
-        }
-
-        /*
-        *   Güncellenmiş sayımları önbelleğe kaydet
-        *   Cache updated counts
-        */
-        Cache::put($cacheKey, $counts);
-
-        /*
-        *   Eğer eşik değeri aşıldıysa veritabanına kaydet
-        *   If threshold value is exceeded, save to database
-        */
-        if ($counts[$modelKey] >= $threshold) {
-            $this->persistCountsToDatabase($modelKey, $counts[$modelKey]);
-
-            /*
-            *   Sayımı sıfırla
-            *   Reset count
-            */
-            $counts[$modelKey] = 0;
-            Cache::put($cacheKey, $counts);
-        }
+        return $count + (int) ($cachedCounts[$modelKey] ?? 0);
     }
 
-    protected function incrementViewCountDirectly()
+    /**
+     * Model relation for the persisted view counter.
+     */
+    public function modelView(): MorphOne
     {
-        $this->persistCountsToDatabase($this->getCacheModelKey(), 1);
+        return $this->morphOne(ModelView::class, 'modelable', 'model_type', 'model_id');
     }
 
-    protected function persistCountsToDatabase($modelKey, $count)
+    /**
+     * Determine whether cache support is enabled.
+     */
+    protected function isCacheEnabled(): bool
     {
-        [$modelType, $modelId] = explode(':', $modelKey);
-
-        ModelView::updateOrCreate(
-            [
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-            ],
-            [
-                'count' => DB::raw('count + ' . $count),
-            ]
-        );
+        return (bool) config('model-view-counter.cache_enabled', false);
     }
 
-    protected function getCacheModelKey()
+    /**
+     * Resolve the cache key for the underlying model instance.
+     */
+    protected function getCacheModelKey(): string
     {
         return get_class($this) . ':' . $this->getKey();
     }
 
-    public function viewCount()
+    /**
+     * Resolve the cache storage key for all cached counters.
+     */
+    protected function cacheStorageKey(): string
     {
-        return $this->modelView ? $this->modelView->count : 0;
+        return (string) config('model-view-counter.cache_key', 'model_view_counts');
     }
 
-    public function modelView()
+    /**
+     * Determine the TTL for cached counters.
+     */
+    protected function cacheTtlSeconds(): ?int
     {
-        return $this->morphOne(ModelView::class, 'modelable', 'model_type', 'model_id');
+        $ttl = config('model-view-counter.cache_ttl');
+
+        if ($ttl === null) {
+            return null;
+        }
+
+        return (int) $ttl;
     }
 }
