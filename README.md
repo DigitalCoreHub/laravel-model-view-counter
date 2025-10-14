@@ -14,20 +14,15 @@ Model View Counter, Laravel modellerinizin görüntülenme sayılarını takip e
 
 ## Kurulum
 
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/DigitalCoreHub/laravel-model-view-counter.git"
-    }
-],
-```
-
 ```bash
 composer require digitalcorehub/laravel-model-view-counter
-php artisan vendor:publish
+
+# Yapılandırma dosyasını ve migration'ı yayınlayın
+php artisan vendor:publish --provider="DigitalCoreHub\LaravelModelViewCounter\LaravelModelViewCounterServiceProvider"
 php artisan migrate
 ```
+
+Paket Packagist üzerinde yayınlandığı için ek depo tanımlamanız gerekmez.
 
 ## Yapılandırma
 
