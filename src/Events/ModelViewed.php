@@ -1,15 +1,15 @@
 <?php
 
 namespace DigitalCoreHub\LaravelModelViewCounter\Events;
+
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\SerializesModels;
 
 class ModelViewed
 {
     use SerializesModels;
-    public $model;
 
-    public function __construct($model)
+    public function __construct(public Model $model)
     {
-        $this->model = $model;
     }
 }
